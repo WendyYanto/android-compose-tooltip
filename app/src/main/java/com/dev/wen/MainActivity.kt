@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
@@ -68,6 +69,9 @@ private fun Item(count: Int, name: String) {
     val anchorOffset = remember {
         mutableStateOf(IntOffset(0, 0))
     }
+    val anchorSize = remember {
+        mutableStateOf(IntSize(0, 0))
+    }
     val popupSize = remember {
         mutableStateOf(IntSize(0, 0))
     }
@@ -77,29 +81,42 @@ private fun Item(count: Int, name: String) {
 
     if (visiblePopUp.value) {
         Log.v("YEAD", "visible")
-        Popup(offset = popupOffset.value) {
-            Box(modifier = Modifier
+        Popup(
+            onDismissRequest = { visiblePopUp.value = false },
+            offset = popupOffset.value
+        ) {
+            Card(modifier = Modifier
                 .background(color = Color.White)
                 .onSizeChanged {
+                    Log.v("YAYAYAYAYA", "hi")
                     popupSize.value = it
                 }
-                .padding(4.dp)
             ) {
-                Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                Column(
+                    modifier = Modifier.padding(4.dp)
+                ) {
+                    Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                    Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                    Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                    Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                    Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                    Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                }
             }
         }
     }
 
-    val width = LocalView.current.measuredWidth.dp
     Text(
         text = "Hello $count : $name!",
         modifier = Modifier
             .onGloballyPositioned {
                 Log.v("WENDDD", "position changed : ${it.positionInWindow()}")
                 Log.v("WENDDD", "position changed 2 : ${it.positionInRoot()}")
-
                 anchorOffset.value =
                     IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
+            }
+            .onSizeChanged {
+                anchorSize.value = it
             }
             .clickable {
                 visiblePopUp.value = true
