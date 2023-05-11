@@ -3,6 +3,8 @@ package com.dev.wen
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedDispatcher
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -16,9 +18,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -29,6 +33,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.dev.wen.ui.theme.ComposeToolTipTheme
@@ -46,6 +51,10 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Greeting("Android")
                 }
+
+                BackHandler() {
+
+                }
             }
         }
     }
@@ -54,6 +63,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun Greeting(name: String) {
     Column(
+        horizontalAlignment = Alignment.End,
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         for (count in 1..100) {
             Item(count, name)
@@ -62,14 +73,13 @@ fun Greeting(name: String) {
 }
 
 @Composable
-private fun ToolTipAnchor(inverted: Boolean = false) {
+private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
     Canvas(
         modifier = Modifier
             .height(8.dp)
-            .width(
-                16.dp
-            )
+            .width(16.dp)
             .graphicsLayer {
+                translationX = anchorWidth.toFloat()
                 if (inverted) {
                     rotationX = 180f
                 }
@@ -94,6 +104,8 @@ internal sealed class AnchorPosition {
 
 @Composable
 private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
+    val density = LocalDensity.current.density
+
     val visiblePopUp = remember {
         mutableStateOf(false)
     }
@@ -106,12 +118,14 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
     val popupSize = remember {
         mutableStateOf(IntSize(0, 0))
     }
-    val density = LocalDensity.current.density
+    val offset = with(LocalDensity.current) {
+        10.dp.roundToPx()
+    }
     val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
 
     val popupPositionY = derivedStateOf {
-        val onTopCoordsY = anchorOffset.value.y - popupSize.value.height
-        val onDownCoordsY = anchorOffset.value.y + anchorSize.value.height
+        val onTopCoordsY = anchorOffset.value.y - popupSize.value.height - offset
+        val onDownCoordsY = anchorOffset.value.y + anchorSize.value.height + offset
 
         val coordsY = if (isTopTooltip) {
             if (onTopCoordsY < 0) {
@@ -134,6 +148,10 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
         IntOffset(anchorOffset.value.x, popupPositionY.value.positionY)
     }
 
+    val anchorCenterX = derivedStateOf {
+        anchorOffset.value.x
+    }
+
     if (visiblePopUp.value) {
         Popup(
             onDismissRequest = { visiblePopUp.value = false },
@@ -144,14 +162,21 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
                     popupSize.value = it
                 }) {
                 if (popupPositionY.value is AnchorPosition.Bottom) {
-                    ToolTipAnchor(inverted = true)
+                    ToolTipAnchor(
+                        anchorWidth = anchorCenterX.value,
+                        inverted = true
+                    )
                 }
                 Card(
                     modifier = Modifier
-                        .background(color = Color.White)
+                        .background(color = Color.Transparent)
+                        .padding(horizontal = 10.dp),
+                    elevation = 4.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp)
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .background(Color.White),
                     ) {
                         Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
                         Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
@@ -162,7 +187,7 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
                     }
                 }
                 if (popupPositionY.value is AnchorPosition.Top) {
-                    ToolTipAnchor()
+                    ToolTipAnchor(anchorCenterX.value)
                 }
             }
 
@@ -173,12 +198,12 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
         text = "Hello $count : $name!",
         modifier = Modifier
             .onGloballyPositioned {
-                Log.v("WENDDD", "position changed : ${it.positionInWindow()}")
-                Log.v("WENDDD", "position changed 2 : ${it.positionInRoot()}")
+                Log.v("HI", it.positionInRoot().toString())
                 anchorOffset.value =
                     IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
             }
             .onSizeChanged {
+                Log.v("LENGTH", it.toString())
                 anchorSize.value = it
             }
             .clickable {
