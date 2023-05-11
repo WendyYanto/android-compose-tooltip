@@ -6,7 +6,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -25,13 +24,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.dev.wen.ui.theme.ComposeToolTipTheme
+import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,7 +52,6 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Greeting(name: String) {
-    Log.v("YANRTO", LocalConfiguration.current.screenHeightDp.toString())
     Column {
 
         for (count in 1..100) {
@@ -62,7 +61,7 @@ fun Greeting(name: String) {
 }
 
 @Composable
-private fun Item(count: Int, name: String) {
+private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
     val visiblePopUp = remember {
         mutableStateOf(false)
     }
@@ -75,12 +74,31 @@ private fun Item(count: Int, name: String) {
     val popupSize = remember {
         mutableStateOf(IntSize(0, 0))
     }
+    val density = LocalDensity.current.density
+    val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
+
     val popupOffset = derivedStateOf {
-        IntOffset(anchorOffset.value.x, anchorOffset.value.y - popupSize.value.height)
+        val onTopCoordsY = anchorOffset.value.y - popupSize.value.height
+        val onDownCoordsY = anchorOffset.value.y + anchorSize.value.height
+
+        val coordsY = if (isTopTooltip) {
+            if (onTopCoordsY < 0) {
+                onDownCoordsY
+            } else {
+                onTopCoordsY
+            }
+        } else {
+            if (onDownCoordsY + popupSize.value.height > screenHeight) {
+                onTopCoordsY
+            } else {
+                onDownCoordsY
+            }
+        }
+
+        IntOffset(anchorOffset.value.x, coordsY)
     }
 
     if (visiblePopUp.value) {
-        Log.v("YEAD", "visible")
         Popup(
             onDismissRequest = { visiblePopUp.value = false },
             offset = popupOffset.value
@@ -88,12 +106,11 @@ private fun Item(count: Int, name: String) {
             Card(modifier = Modifier
                 .background(color = Color.White)
                 .onSizeChanged {
-                    Log.v("YAYAYAYAYA", "hi")
                     popupSize.value = it
                 }
             ) {
                 Column(
-                    modifier = Modifier.padding(4.dp)
+                    modifier = Modifier.padding(16.dp)
                 ) {
                     Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
                     Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
