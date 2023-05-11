@@ -77,7 +77,7 @@ private fun ToolTipAnchor(inverted: Boolean = false) {
     ) {
         val path = Path()
         path.moveTo(0f, 0f)
-        path.lineTo(size.width / 2f, size.height / 2f)
+        path.lineTo(size.width / 2f, size.height)
         path.lineTo(size.width, 0f)
         path.close()
 
