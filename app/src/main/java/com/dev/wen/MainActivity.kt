@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -37,6 +38,8 @@ import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.dev.wen.ui.theme.ComposeToolTipTheme
+import kotlin.math.abs
+import kotlin.math.min
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
@@ -72,14 +75,18 @@ fun Greeting(name: String) {
     }
 }
 
+
 @Composable
 private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
+    val offset = with(LocalDensity.current) {
+        4.dp.roundToPx()
+    }
     Canvas(
         modifier = Modifier
             .height(8.dp)
             .width(16.dp)
             .graphicsLayer {
-                translationX = anchorWidth.toFloat()
+                translationX = (anchorWidth - offset).toFloat()
                 if (inverted) {
                     rotationX = 180f
                 }
@@ -96,6 +103,7 @@ private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
 }
 
 internal sealed class AnchorPosition {
+
     abstract val positionY: Int
 
     data class Bottom(override val positionY: Int) : AnchorPosition()
@@ -122,6 +130,7 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
         10.dp.roundToPx()
     }
     val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
+    val screenWidth = (LocalConfiguration.current.screenWidthDp * density).roundToInt()
 
     val popupPositionY = derivedStateOf {
         val onTopCoordsY = anchorOffset.value.y - popupSize.value.height - offset
@@ -148,9 +157,9 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
         IntOffset(anchorOffset.value.x, popupPositionY.value.positionY)
     }
 
-    // ToDo: Figure out how to calculate the math
     val anchorCenterX = derivedStateOf {
-        anchorOffset.value.x
+        val popupDiff = abs(minOf(screenWidth - (anchorOffset.value.x + popupSize.value.width), 0))
+        popupDiff + (anchorSize.value.width / 2)
     }
 
     if (visiblePopUp.value) {
@@ -199,7 +208,12 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
         text = "Hello $count : $name!",
         modifier = Modifier
             .onGloballyPositioned {
-                Log.v("HI", it.positionInRoot().toString())
+                Log.v(
+                    "HI",
+                    it
+                        .positionInRoot()
+                        .toString()
+                )
                 anchorOffset.value =
                     IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
             }
