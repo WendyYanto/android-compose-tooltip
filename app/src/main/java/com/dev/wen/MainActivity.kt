@@ -129,7 +129,11 @@ private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
             modifier = Modifier
                 .height(8.dp)
                 .width(16.dp)
-                .align(Alignment.BottomCenter)
+                .align(if (inverted) {
+                    Alignment.BottomCenter
+                } else {
+                    Alignment.TopCenter
+                })
                 .graphicsLayer {
                     translationY = if (inverted) {
                         24f
