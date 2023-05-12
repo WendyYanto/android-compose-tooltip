@@ -1,9 +1,10 @@
 package com.dev.wen
 
+import android.graphics.BlurMaskFilter
+import android.graphics.Typeface.NORMAL
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
-import androidx.activity.OnBackPressedDispatcher
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Canvas
@@ -20,26 +21,25 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.center
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import androidx.compose.ui.zIndex
 import com.dev.wen.ui.theme.ComposeToolTipTheme
 import kotlin.math.abs
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
 fun Greeting(name: String) {
     Column(
         horizontalAlignment = Alignment.End,
-        verticalArrangement = Arrangement.SpaceBetween
+        verticalArrangement = Arrangement.SpaceEvenly
     ) {
         for (count in 1..100) {
             Item(count, name)
@@ -85,33 +85,42 @@ private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
         modifier = Modifier
             .height(8.dp)
             .width(16.dp)
+            .zIndex(0f)
             .graphicsLayer {
+                translationY = if (inverted) {
+                    1f
+                } else {
+                    -1f
+                }
                 translationX = (anchorWidth - offset).toFloat()
                 if (inverted) {
                     rotationX = 180f
                 }
+                shadowElevation = 10f
             }
     ) {
         val path = Path()
         path.moveTo(0f, 0f)
         path.lineTo(size.width / 2f, size.height)
         path.lineTo(size.width, 0f)
+
         path.close()
 
-        drawPath(path, Color.Black)
+        drawPath(path, Color.White)
     }
 }
 
 internal sealed class AnchorPosition {
 
-    abstract val positionY: Int
+    abstract val position: Int
 
-    data class Bottom(override val positionY: Int) : AnchorPosition()
-    data class Top(override val positionY: Int) : AnchorPosition()
+    data class Bottom(override val position: Int) : AnchorPosition()
+    data class Top(override val position: Int) : AnchorPosition()
+    data class Left(override val position: Int) : AnchorPosition()
 }
 
 @Composable
-private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
+private fun Item(count: Int, name: String, isTopTooltip: Boolean = true) {
     val density = LocalDensity.current.density
 
     val visiblePopUp = remember {
@@ -133,33 +142,51 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
     val screenWidth = (LocalConfiguration.current.screenWidthDp * density).roundToInt()
 
     val popupPositionY = derivedStateOf {
-        val onTopCoordsY = anchorOffset.value.y - popupSize.value.height - offset
-        val onDownCoordsY = anchorOffset.value.y + anchorSize.value.height + offset
+        val onTopCoordinate = anchorOffset.value.y - popupSize.value.height - offset
+        val onDownCoordinate = anchorOffset.value.y + anchorSize.value.height + offset
 
-        val coordsY = if (isTopTooltip) {
-            if (onTopCoordsY < 0) {
-                AnchorPosition.Bottom(onDownCoordsY)
+        val coordinate = if (isTopTooltip) {
+            if (onTopCoordinate < 0) {
+                AnchorPosition.Bottom(onDownCoordinate)
             } else {
-                AnchorPosition.Top(onTopCoordsY)
+                AnchorPosition.Top(onTopCoordinate)
             }
         } else {
-            if (onDownCoordsY + popupSize.value.height > screenHeight) {
-                AnchorPosition.Top(onTopCoordsY)
+            if (onDownCoordinate + popupSize.value.height > screenHeight) {
+                AnchorPosition.Top(onTopCoordinate)
             } else {
-                AnchorPosition.Bottom(onDownCoordsY)
+                AnchorPosition.Bottom(onDownCoordinate)
             }
         }
 
-        coordsY
+        coordinate
+    }
+
+    val popupPositionX = derivedStateOf {
+        val centerPosition =
+            (anchorOffset.value.x + (anchorSize.value.width) / 2) - (popupSize.value.width / 2)
+
+        AnchorPosition.Left(maxOf(0, centerPosition))
     }
 
     val popupOffset = derivedStateOf {
-        IntOffset(anchorOffset.value.x, popupPositionY.value.positionY)
+        IntOffset(popupPositionX.value.position, popupPositionY.value.position)
     }
 
     val anchorCenterX = derivedStateOf {
-        val popupDiff = abs(minOf(screenWidth - (anchorOffset.value.x + popupSize.value.width), 0))
-        popupDiff + (anchorSize.value.width / 2)
+        val popupDiffOffset =
+            minOf(screenWidth - (popupPositionX.value.position + popupSize.value.width), 0)
+        val formattedPositionX = popupPositionX.value.position + popupDiffOffset
+        val popupMostRightPosition = formattedPositionX + popupSize.value.width + offset
+
+        val anchorPosition = (anchorOffset.value.x + (anchorSize.value.width) / 2)
+        val anchorRightPosition = anchorOffset.value.x + anchorSize.value.width
+
+        if (anchorRightPosition < popupMostRightPosition) {
+            anchorPosition - formattedPositionX
+        } else {
+            (popupSize.value.width - offset) / 2
+        }
     }
 
     if (visiblePopUp.value) {
@@ -188,19 +215,13 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
                             .padding(16.dp)
                             .background(Color.White),
                     ) {
-                        Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
-                        Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
-                        Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
-                        Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
-                        Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
-                        Text(text = "JAMAMSAMSAMSKMASKMAKSMKAS")
+                        Text(text = "JAAJAakskakslaksajslajskjasjkaljskljaskljaskljklasjkajskjalksjklajsklajskljksajskajslkjl")
                     }
                 }
                 if (popupPositionY.value is AnchorPosition.Top) {
                     ToolTipAnchor(anchorCenterX.value)
                 }
             }
-
         }
     }
 
