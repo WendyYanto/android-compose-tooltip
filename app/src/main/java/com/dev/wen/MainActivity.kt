@@ -86,12 +86,6 @@ private val TriangleShape = GenericShape { size, _ ->
     lineTo(size.width, 0f)
 }
 
-private val InvertedTriangleShape = GenericShape { size, _ ->
-    moveTo(0f, -size.height)
-    lineTo(size.width / 2f, 0f)
-    lineTo(size.width, -size.height)
-}
-
 @Composable
 private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
     val offset = with(LocalDensity.current) {
