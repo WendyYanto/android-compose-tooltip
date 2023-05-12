@@ -11,6 +11,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material.Card
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -23,9 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.painter.BrushPainter
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -75,38 +80,72 @@ fun Greeting(name: String) {
     }
 }
 
+private val TriangleShape = GenericShape { size, _ ->
+    moveTo(0f, 0f)
+    lineTo(size.width / 2f, size.height)
+    lineTo(size.width, 0f)
+}
+
+private val InvertedTriangleShape = GenericShape { size, _ ->
+    moveTo(0f, -size.height)
+    lineTo(size.width / 2f, 0f)
+    lineTo(size.width, -size.height)
+}
 
 @Composable
 private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
     val offset = with(LocalDensity.current) {
         4.dp.roundToPx()
     }
-    Canvas(
-        modifier = Modifier
-            .height(8.dp)
-            .width(16.dp)
-            .zIndex(0f)
-            .graphicsLayer {
-                translationY = if (inverted) {
-                    1f
-                } else {
-                    -1f
-                }
-                translationX = (anchorWidth - offset).toFloat()
-                if (inverted) {
-                    rotationX = 180f
-                }
-                shadowElevation = 10f
-            }
-    ) {
-        val path = Path()
-        path.moveTo(0f, 0f)
-        path.lineTo(size.width / 2f, size.height)
-        path.lineTo(size.width, 0f)
+    Box(modifier = Modifier
+        .zIndex(1f)
+        .graphicsLayer {
+            translationX = (anchorWidth - offset).toFloat()
 
-        path.close()
+        }) {
+        Canvas(
+            modifier = Modifier
+                .height(8.dp)
+                .width(16.dp)
+                .align(Alignment.TopStart)
+                .graphicsLayer {
+                    shape = TriangleShape
+                    translationY = if (inverted) {
+                        1f
+                    } else {
+                        -1f
+                    }
+                    if (inverted) {
+                        rotationX = 180f
+                    }
+                    shadowElevation = 10f
+                }
+        ) {
+            val path = Path()
+            path.moveTo(0f, 0f)
+            path.lineTo(size.width / 2f, size.height)
+            path.lineTo(size.width, 0f)
 
-        drawPath(path, Color.White)
+            path.close()
+
+            drawPath(path, Color.White)
+        }
+
+        Canvas(
+            modifier = Modifier
+                .height(8.dp)
+                .width(16.dp)
+                .align(Alignment.BottomCenter)
+                .graphicsLayer {
+                    translationY = if (inverted) {
+                        24f
+                    } else {
+                        -24f
+                    }
+                }
+        ) {
+            drawRect(Color.White)
+        }
     }
 }
 
@@ -120,7 +159,7 @@ internal sealed class AnchorPosition {
 }
 
 @Composable
-private fun Item(count: Int, name: String, isTopTooltip: Boolean = true) {
+private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
     val density = LocalDensity.current.density
 
     val visiblePopUp = remember {
@@ -180,9 +219,9 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = true) {
         val popupMostRightPosition = formattedPositionX + popupSize.value.width + offset
 
         val anchorPosition = (anchorOffset.value.x + (anchorSize.value.width) / 2)
-        val anchorRightPosition = anchorOffset.value.x + anchorSize.value.width
+        val anchorMostRightPosition = anchorOffset.value.x + anchorSize.value.width
 
-        if (anchorRightPosition < popupMostRightPosition) {
+        if (anchorMostRightPosition < popupMostRightPosition) {
             anchorPosition - formattedPositionX
         } else {
             (popupSize.value.width - offset) / 2
@@ -212,8 +251,8 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = true) {
                 ) {
                     Column(
                         modifier = Modifier
-                            .padding(16.dp)
-                            .background(Color.White),
+                            .background(Color.White)
+                            .padding(16.dp),
                     ) {
                         Text(text = "JAAJAakskakslaksajslajskjasjkaljskljaskljaskljklasjkajskjalksjklajsklajskljksajskajslkjl")
                     }
