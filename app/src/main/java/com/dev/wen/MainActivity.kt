@@ -29,10 +29,12 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
 import com.dev.wen.ui.theme.ComposeToolTipTheme
 import kotlin.math.roundToInt
@@ -83,66 +85,99 @@ private val TriangleShape = GenericShape { size, _ ->
 @Composable
 private fun ToolTipAnchor(
     anchorWidth: Int,
-    inverted: Boolean = false
+    inverted: Boolean = false,
+    width: Dp = 16.dp
 ) {
     val offset = with(LocalDensity.current) {
-        4.dp.roundToPx()
+        (width / 4).roundToPx()
     }
+
+    val height = width / 2
 
     Box(modifier = Modifier
         .zIndex(1f)
         .graphicsLayer {
             translationX = (anchorWidth - offset).toFloat()
         }) {
-        Canvas(
-            modifier = Modifier
-                .height(8.dp)
-                .width(16.dp)
-                .align(Alignment.TopStart)
-                .graphicsLayer {
-                    shape = TriangleShape
-                    translationY = if (inverted) {
-                        1f
-                    } else {
-                        -1f
-                    }
-                    if (inverted) {
-                        rotationX = 180f
-                    }
-                    shadowElevation = 10f
+
+        Anchor(
+            modifier = Modifier.align(Alignment.TopStart),
+            height = height,
+            width = width,
+            inverted = inverted
+        )
+
+        AnchorShadowCover(
+            modifier = Modifier.align(
+                if (inverted) {
+                    Alignment.BottomCenter
+                } else {
+                    Alignment.TopCenter
                 }
-        ) {
-            val path = Path()
-            path.moveTo(0f, 0f)
-            path.lineTo(size.width / 2f, size.height)
-            path.lineTo(size.width, 0f)
+            ),
+            height = height,
+            width = width,
+            inverted = inverted
+        )
+    }
+}
 
-            path.close()
-
-            drawPath(path, Color.White)
-        }
-
-        Canvas(
-            modifier = Modifier
-                .height(8.dp)
-                .width(16.dp)
-                .align(
-                    if (inverted) {
-                        Alignment.BottomCenter
-                    } else {
-                        Alignment.TopCenter
-                    }
-                )
-                .graphicsLayer {
-                    translationY = if (inverted) {
-                        21f
-                    } else {
-                        -21f
-                    }
+@Composable
+private fun Anchor(
+    modifier: Modifier = Modifier,
+    height: Dp,
+    width: Dp,
+    inverted: Boolean
+) {
+    Canvas(
+        modifier = modifier
+            .height(height)
+            .width(width)
+            .graphicsLayer {
+                shape = TriangleShape
+                translationY = if (inverted) {
+                    1f
+                } else {
+                    -1f
                 }
-        ) {
-            drawRect(Color.White)
-        }
+                if (inverted) {
+                    rotationX = 180f
+                }
+                shadowElevation = 10f
+            }
+    ) {
+        val path = Path()
+        path.moveTo(0f, 0f)
+        path.lineTo(size.width / 2f, size.height)
+        path.lineTo(size.width, 0f)
+
+        path.close()
+
+        drawPath(path, Color.White)
+    }
+}
+
+@Composable
+private fun AnchorShadowCover(
+    modifier: Modifier = Modifier,
+    height: Dp,
+    width: Dp,
+    inverted: Boolean
+) {
+    Canvas(
+        modifier = modifier
+            .height(height)
+            .width(width)
+
+            .graphicsLayer {
+                translationY = if (inverted) {
+                    21f
+                } else {
+                    -21f
+                }
+            }
+    ) {
+        drawRect(Color.White)
     }
 }
 
@@ -156,7 +191,12 @@ internal sealed class AnchorPosition {
 }
 
 @Composable
-private fun ToolTip(isTopTooltip: Boolean = false, anchorContent: @Composable () -> Unit) {
+private fun ToolTip(
+    isTopTooltip: Boolean = false,
+    offsetInDp: Dp = 10.dp,
+    popupProperties: PopupProperties = PopupProperties(),
+    anchorContent: @Composable () -> Unit
+) {
     val density = LocalDensity.current.density
 
     val visiblePopUp = remember {
@@ -172,7 +212,7 @@ private fun ToolTip(isTopTooltip: Boolean = false, anchorContent: @Composable ()
         mutableStateOf(IntSize(0, 0))
     }
     val offset = with(LocalDensity.current) {
-        10.dp.roundToPx()
+        offsetInDp.roundToPx()
     }
 
     val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
@@ -215,12 +255,11 @@ private fun ToolTip(isTopTooltip: Boolean = false, anchorContent: @Composable ()
     if (visiblePopUp.value) {
         Popup(
             onDismissRequest = { visiblePopUp.value = false },
+            properties = popupProperties,
             offset = popupOffset.value
         ) {
             Column(modifier = Modifier
-                .onSizeChanged {
-                    popupSize.value = it
-                }) {
+                .onSizeChanged { popupSize.value = it }) {
                 if (popupPositionY.value is AnchorPosition.Bottom) {
                     ToolTipAnchor(
                         anchorWidth = anchorPosition.value,
@@ -230,16 +269,10 @@ private fun ToolTip(isTopTooltip: Boolean = false, anchorContent: @Composable ()
                 Card(
                     modifier = Modifier
                         .background(color = Color.Transparent)
-                        .padding(horizontal = 10.dp),
+                        .padding(horizontal = offsetInDp),
                     elevation = 4.dp
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .background(Color.White)
-                            .padding(16.dp),
-                    ) {
-                        Text(text = "JAAJAakskakslaksajslajskjasjkaljskljaskljaskljklasjkajskjalksjklajsklajskljksajskajslkjl")
-                    }
+                    ToolTipContent()
                 }
                 if (popupPositionY.value is AnchorPosition.Top) {
                     ToolTipAnchor(anchorPosition.value)
@@ -253,13 +286,20 @@ private fun ToolTip(isTopTooltip: Boolean = false, anchorContent: @Composable ()
             anchorOffset.value =
                 IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
         }
-        .onSizeChanged {
-            anchorSize.value = it
-        }
-        .clickable {
-            visiblePopUp.value = true
-        }) {
+        .onSizeChanged { anchorSize.value = it }
+        .clickable { visiblePopUp.value = true }) {
         anchorContent()
+    }
+}
+
+@Composable
+private fun ToolTipContent() {
+    Column(
+        modifier = Modifier
+            .background(Color.White)
+            .padding(16.dp),
+    ) {
+        Text(text = "JAAJAakskakslaksajslajskjasjkaljskljaskljaskljklasjkajskjalksjklajsklajskljksajskajslkjl")
     }
 }
 
