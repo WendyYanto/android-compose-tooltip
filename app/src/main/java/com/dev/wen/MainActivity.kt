@@ -45,7 +45,7 @@ fun Greeting(name: String) {
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
         for (count in 1..100) {
-            ToolTip {
+            ToolTip(toolTipContent = { ToolTipContent() }) {
                 Text(
                     text = "Hello $count : $name!",
                 )

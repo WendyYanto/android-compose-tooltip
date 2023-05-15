@@ -71,6 +71,7 @@ fun ToolTip(
     isAnchorOnTop: Boolean = false,
     margin: Dp = TOOLTIP_MARGIN_IN_DP.dp,
     popupProperties: PopupProperties = PopupProperties(focusable = true),
+    toolTipContent: @Composable () -> Unit,
     anchorContent: @Composable () -> Unit
 ) {
     val density = LocalDensity.current.density
@@ -148,7 +149,7 @@ fun ToolTip(
                         .padding(horizontal = margin),
                     elevation = TOOLTIP_ELEVATION_IN_DP.dp
                 ) {
-                    ToolTipContent()
+                    toolTipContent()
                 }
                 if (popupPositionY is AnchorPosition.Top) {
                     ToolTipAnchor(anchorPosition)
@@ -350,7 +351,7 @@ internal sealed class AnchorPosition {
 }
 
 @Composable
-private fun ToolTipContent() {
+fun ToolTipContent() {
     Column(
         modifier = Modifier
             .background(Color.White)
