@@ -37,7 +37,7 @@ import androidx.compose.ui.zIndex
 import kotlin.math.roundToInt
 
 private const val TOOLTIP_ANCHOR_OFFSET = 1f
-private const val TOOLTIP_OFFSET_IN_DP = 10
+private const val TOOLTIP_MARGIN_IN_DP = 10
 private const val TOOLTIP_ELEVATION_IN_DP = 8
 private const val TOOLTIP_ANCHOR_WIDTH_IN_DP = 16
 
@@ -56,7 +56,7 @@ private val TriangleShape = GenericShape { size, _ ->
  * @param isAnchorOnTop serves as flag to determine position of anchor.
  * Currently, only TOP and BOTTOM was supported.
  *
- * @param offsetInDp is used for spaces before showing overlay card.
+ * @param margin is used for spaces before showing overlay card.
  * This is to prevent ToolTip getting attached to edges of screen.
  *
  * @param popupProperties is to be passed to [Popup].
@@ -69,7 +69,7 @@ private val TriangleShape = GenericShape { size, _ ->
 @Composable
 fun ToolTip(
     isAnchorOnTop: Boolean = false,
-    offsetInDp: Dp = TOOLTIP_OFFSET_IN_DP.dp,
+    margin: Dp = TOOLTIP_MARGIN_IN_DP.dp,
     popupProperties: PopupProperties = PopupProperties(focusable = true),
     anchorContent: @Composable () -> Unit
 ) {
@@ -87,8 +87,8 @@ fun ToolTip(
     var popupSize by remember {
         mutableStateOf(IntSize(0, 0))
     }
-    val offset = with(LocalDensity.current) {
-        offsetInDp.roundToPx()
+    val marginInPx = with(LocalDensity.current) {
+        margin.roundToPx()
     }
 
     val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
@@ -99,7 +99,7 @@ fun ToolTip(
             anchorOffset = anchorOffset,
             anchorSize = anchorSize,
             popupSize = popupSize,
-            offset = offset,
+            margin = marginInPx,
             isAnchorOnTop = isAnchorOnTop,
             screenHeight = screenHeight
         )
@@ -123,7 +123,7 @@ fun ToolTip(
             anchorSize = anchorSize,
             popupSize = popupSize,
             popupPositionX = popupPositionX,
-            offset = offset,
+            margin = marginInPx,
             screenWidth = screenWidth
         )
     }
@@ -145,7 +145,7 @@ fun ToolTip(
                 Card(
                     modifier = Modifier
                         .background(color = Color.Transparent)
-                        .padding(horizontal = offsetInDp),
+                        .padding(horizontal = margin),
                     elevation = TOOLTIP_ELEVATION_IN_DP.dp
                 ) {
                     ToolTipContent()
@@ -173,13 +173,13 @@ private fun calculatePopupPositionY(
     anchorOffset: IntOffset,
     anchorSize: IntSize,
     popupSize: IntSize,
-    offset: Int,
+    margin: Int,
     isAnchorOnTop: Boolean,
     screenHeight: Int
 ): AnchorPosition {
     // anchorTopPosition value when anchor is placed on top
-    val anchorTopPosition = anchorOffset.y - popupSize.height - offset
-    val anchorBottomPosition = anchorOffset.y + anchorSize.height + offset
+    val anchorTopPosition = anchorOffset.y - popupSize.height - margin
+    val anchorBottomPosition = anchorOffset.y + anchorSize.height + margin
 
     val popupMostBottomPosition = anchorBottomPosition + popupSize.height
 
@@ -215,7 +215,7 @@ private fun calculateAnchorPosition(
     anchorSize: IntSize,
     popupSize: IntSize,
     popupPositionX: AnchorPosition,
-    offset: Int,
+    margin: Int,
     screenWidth: Int
 ): Int {
     val popupRightPosition = popupPositionX.position + popupSize.width
@@ -224,15 +224,17 @@ private fun calculateAnchorPosition(
     val popupRightOffset = minOf(screenWidth - popupRightPosition, 0)
 
     val popupLeftPosition = popupPositionX.position + popupRightOffset
-    val popupMostRightPosition = popupLeftPosition + popupSize.width + offset
+    val popupMostRightPosition = popupLeftPosition + popupSize.width + margin
 
     val anchorPosition = anchorOffset.x + (anchorSize.width / 2)
     val anchorMostRightPosition = anchorOffset.x + anchorSize.width
 
     return if (anchorMostRightPosition < popupMostRightPosition) {
+        // use anchor's center position
         anchorPosition - popupLeftPosition
     } else {
-        (popupSize.width - offset) / 2
+        // use center position of popup
+        (popupSize.width - margin) / 2
     }
 }
 
