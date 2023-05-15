@@ -46,6 +46,8 @@ import androidx.compose.ui.zIndex
 import com.dev.wen.ui.theme.ComposeToolTipTheme
 import kotlin.math.roundToInt
 
+private const val TOOLTIP_ANCHOR_OFFSET = 1f
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -143,9 +145,9 @@ private fun Anchor(
             .graphicsLayer {
                 shape = TriangleShape
                 translationY = if (inverted) {
-                    1f
+                    TOOLTIP_ANCHOR_OFFSET
                 } else {
-                    -1f
+                    -TOOLTIP_ANCHOR_OFFSET
                 }
                 if (inverted) {
                     rotationX = 180f
@@ -171,15 +173,19 @@ private fun AnchorShadowCover(
     width: Dp,
     inverted: Boolean
 ) {
+    val heightInPx = with(LocalDensity.current) {
+        height.roundToPx()
+    }
+
     Canvas(
         modifier = modifier
             .height(height)
             .width(width)
             .graphicsLayer {
                 translationY = if (inverted) {
-                    21f
+                    heightInPx + TOOLTIP_ANCHOR_OFFSET
                 } else {
-                    -21f
+                    -(heightInPx + TOOLTIP_ANCHOR_OFFSET)
                 }
             }
     ) {
@@ -190,6 +196,7 @@ private fun AnchorShadowCover(
 internal sealed class AnchorPosition {
 
     abstract val position: Int
+
     data class Bottom(override val position: Int) : AnchorPosition()
     data class Top(override val position: Int) : AnchorPosition()
     data class Left(override val position: Int) : AnchorPosition()
