@@ -89,7 +89,7 @@ private fun ToolTipAnchor(
     width: Dp = 16.dp
 ) {
     val offset = with(LocalDensity.current) {
-        (width / 4).roundToPx()
+        (width / 2).roundToPx()
     }
 
     val height = width / 2
@@ -288,6 +288,7 @@ private fun ToolTip(
         }
         .onSizeChanged { anchorSize.value = it }
         .clickable { visiblePopUp.value = true }) {
+
         anchorContent()
     }
 }
