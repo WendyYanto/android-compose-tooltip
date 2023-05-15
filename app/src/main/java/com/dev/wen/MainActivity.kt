@@ -57,7 +57,7 @@ fun Greeting(name: String) {
             .background(Color.White)
             .padding(16.dp),
         verticalArrangement = Arrangement.SpaceBetween,
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.Start
     ) {
         data.forEach {
             ToolTip(toolTipContent = { ToolTipContent() }) {

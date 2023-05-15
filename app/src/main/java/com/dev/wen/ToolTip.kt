@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val TOOLTIP_ANCHOR_OFFSET = 1f
@@ -242,12 +243,12 @@ private fun calculateAnchorPosition(
 
     return if (anchorMostRightPosition < popupMostRightPosition) {
         // use anchor's center position
-        // ToDo
-        2 * margin
+        // ToDo: BUG !!!
+        abs(popupPositionX.position) + anchorSize.width / 2
     } else {
         // use center position of popup
-        // ToDo
-        2 * margin
+        // ToDo: BUG !!!
+        popupSize.width / 2
     }
 }
 
@@ -369,6 +370,6 @@ fun ToolTipContent() {
             .background(Color.White)
             .padding(16.dp),
     ) {
-        Text(text = "Text")
+        Text(text = "Text Text")
     }
 }
