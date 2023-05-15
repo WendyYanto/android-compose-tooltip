@@ -202,9 +202,27 @@ internal sealed class AnchorPosition {
     data class Left(override val position: Int) : AnchorPosition()
 }
 
+/**
+ * [ToolTip] is composable component for showing overlay card with anchor pointing at a component
+ * It was built on top [Popup] component where [ToolTip] provides built-in logic to
+ * auto-position and auto-scale based on anchor positions.
+ *
+ * @param isAnchorOnTop serves as flag to determine position of anchor.
+ * Currently, only TOP and BOTTOM was supported.
+ *
+ * @param offsetInDp is used for spaces before showing overlay card.
+ * This is to prevent ToolTip getting attached to edges of screen.
+ *
+ * @param popupProperties is to be passed to [Popup].
+ * By default, [ToolTip] can be dismissed via back button.
+ * This was achieved by setting focusable to true
+ *
+ * @param anchorContent is the most important parameter.
+ * This is where you place your content that will be anchored by [ToolTip]
+ */
 @Composable
-private fun ToolTip(
-    isTopTooltip: Boolean = false,
+fun ToolTip(
+    isAnchorOnTop: Boolean = false,
     offsetInDp: Dp = 10.dp,
     popupProperties: PopupProperties = PopupProperties(focusable = true),
     anchorContent: @Composable () -> Unit
@@ -236,7 +254,7 @@ private fun ToolTip(
             anchorSize = anchorSize,
             popupSize = popupSize,
             offset = offset,
-            isTopTooltip = isTopTooltip,
+            isAnchorOnTop = isAnchorOnTop,
             screenHeight = screenHeight
         )
     }
@@ -320,13 +338,13 @@ private fun calculatePopupPositionY(
     anchorSize: IntSize,
     popupSize: IntSize,
     offset: Int,
-    isTopTooltip: Boolean,
+    isAnchorOnTop: Boolean,
     screenHeight: Int
 ): AnchorPosition {
     val onTopCoordinate = anchorOffset.y - popupSize.height - offset
     val onDownCoordinate = anchorOffset.y + anchorSize.height + offset
 
-    return if (isTopTooltip) {
+    return if (isAnchorOnTop) {
         if (onTopCoordinate < 0) {
             AnchorPosition.Bottom(onDownCoordinate)
         } else {
