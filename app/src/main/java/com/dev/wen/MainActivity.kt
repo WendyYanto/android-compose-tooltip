@@ -1,7 +1,6 @@
 package com.dev.wen
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -15,6 +14,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -65,7 +65,11 @@ fun Greeting(name: String) {
         verticalArrangement = Arrangement.SpaceEvenly
     ) {
         for (count in 1..100) {
-            Item(count, name)
+            ToolTip {
+                Text(
+                    text = "Hello $count : $name!",
+                )
+            }
         }
     }
 }
@@ -152,7 +156,7 @@ internal sealed class AnchorPosition {
 }
 
 @Composable
-private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
+private fun ToolTip(isTopTooltip: Boolean = false, anchorContent: @Composable () -> Unit) {
     val density = LocalDensity.current.density
 
     val visiblePopUp = remember {
@@ -175,51 +179,37 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
     val screenWidth = (LocalConfiguration.current.screenWidthDp * density).roundToInt()
 
     val popupPositionY = derivedStateOf {
-        val onTopCoordinate = anchorOffset.value.y - popupSize.value.height - offset
-        val onDownCoordinate = anchorOffset.value.y + anchorSize.value.height + offset
-
-        val coordinate = if (isTopTooltip) {
-            if (onTopCoordinate < 0) {
-                AnchorPosition.Bottom(onDownCoordinate)
-            } else {
-                AnchorPosition.Top(onTopCoordinate)
-            }
-        } else {
-            if (onDownCoordinate + popupSize.value.height > screenHeight) {
-                AnchorPosition.Top(onTopCoordinate)
-            } else {
-                AnchorPosition.Bottom(onDownCoordinate)
-            }
-        }
-
-        coordinate
+        calculatePopupPositionY(
+            anchorOffset = anchorOffset,
+            anchorSize = anchorSize,
+            popupSize = popupSize,
+            offset = offset,
+            isTopTooltip = isTopTooltip,
+            screenHeight = screenHeight
+        )
     }
 
     val popupPositionX = derivedStateOf {
-        val centerPosition =
-            (anchorOffset.value.x + (anchorSize.value.width) / 2) - (popupSize.value.width / 2)
-
-        AnchorPosition.Left(maxOf(0, centerPosition))
+        calculatePopupPositionX(
+            anchorOffset = anchorOffset,
+            anchorSize = anchorSize,
+            popupSize = popupSize
+        )
     }
 
     val popupOffset = derivedStateOf {
         IntOffset(popupPositionX.value.position, popupPositionY.value.position)
     }
 
-    val anchorCenterX = derivedStateOf {
-        val popupDiffOffset =
-            minOf(screenWidth - (popupPositionX.value.position + popupSize.value.width), 0)
-        val formattedPositionX = popupPositionX.value.position + popupDiffOffset
-        val popupMostRightPosition = formattedPositionX + popupSize.value.width + offset
-
-        val anchorPosition = (anchorOffset.value.x + (anchorSize.value.width) / 2)
-        val anchorMostRightPosition = anchorOffset.value.x + anchorSize.value.width
-
-        if (anchorMostRightPosition < popupMostRightPosition) {
-            anchorPosition - formattedPositionX
-        } else {
-            (popupSize.value.width - offset) / 2
-        }
+    val anchorPosition = derivedStateOf {
+        calculateAnchorPosition(
+            anchorOffset = anchorOffset,
+            anchorSize = anchorSize,
+            popupSize = popupSize,
+            popupPositionX = popupPositionX,
+            offset = offset,
+            screenWidth = screenWidth
+        )
     }
 
     if (visiblePopUp.value) {
@@ -233,7 +223,7 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
                 }) {
                 if (popupPositionY.value is AnchorPosition.Bottom) {
                     ToolTipAnchor(
-                        anchorWidth = anchorCenterX.value,
+                        anchorWidth = anchorPosition.value,
                         inverted = true
                     )
                 }
@@ -252,33 +242,85 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
                     }
                 }
                 if (popupPositionY.value is AnchorPosition.Top) {
-                    ToolTipAnchor(anchorCenterX.value)
+                    ToolTipAnchor(anchorPosition.value)
                 }
             }
         }
     }
 
-    Text(
-        text = "Hello $count : $name!",
-        modifier = Modifier
-            .onGloballyPositioned {
-                Log.v(
-                    "HI",
-                    it
-                        .positionInRoot()
-                        .toString()
-                )
-                anchorOffset.value =
-                    IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
-            }
-            .onSizeChanged {
-                Log.v("LENGTH", it.toString())
-                anchorSize.value = it
-            }
-            .clickable {
-                visiblePopUp.value = true
-            }
-    )
+    Box(modifier = Modifier
+        .onGloballyPositioned {
+            anchorOffset.value =
+                IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
+        }
+        .onSizeChanged {
+            anchorSize.value = it
+        }
+        .clickable {
+            visiblePopUp.value = true
+        }) {
+        anchorContent()
+    }
+}
+
+private fun calculatePopupPositionY(
+    anchorOffset: State<IntOffset>,
+    anchorSize: State<IntSize>,
+    popupSize: State<IntSize>,
+    offset: Int,
+    isTopTooltip: Boolean,
+    screenHeight: Int
+): AnchorPosition {
+    val onTopCoordinate = anchorOffset.value.y - popupSize.value.height - offset
+    val onDownCoordinate = anchorOffset.value.y + anchorSize.value.height + offset
+
+    return if (isTopTooltip) {
+        if (onTopCoordinate < 0) {
+            AnchorPosition.Bottom(onDownCoordinate)
+        } else {
+            AnchorPosition.Top(onTopCoordinate)
+        }
+    } else {
+        if (onDownCoordinate + popupSize.value.height > screenHeight) {
+            AnchorPosition.Top(onTopCoordinate)
+        } else {
+            AnchorPosition.Bottom(onDownCoordinate)
+        }
+    }
+}
+
+private fun calculatePopupPositionX(
+    anchorOffset: State<IntOffset>,
+    anchorSize: State<IntSize>,
+    popupSize: State<IntSize>,
+): AnchorPosition {
+    val centerPosition =
+        (anchorOffset.value.x + (anchorSize.value.width) / 2) - (popupSize.value.width / 2)
+
+    return AnchorPosition.Left(maxOf(0, centerPosition))
+}
+
+private fun calculateAnchorPosition(
+    anchorOffset: State<IntOffset>,
+    anchorSize: State<IntSize>,
+    popupSize: State<IntSize>,
+    popupPositionX: State<AnchorPosition>,
+    offset: Int,
+    screenWidth: Int
+): Int {
+    val popupDiffOffset =
+        minOf(screenWidth - (popupPositionX.value.position + popupSize.value.width), 0)
+    val formattedPositionX = popupPositionX.value.position + popupDiffOffset
+    val popupMostRightPosition = formattedPositionX + popupSize.value.width + offset
+
+    val anchorPosition = (anchorOffset.value.x + (anchorSize.value.width) / 2)
+    val anchorMostRightPosition = anchorOffset.value.x + anchorSize.value.width
+
+    return if (anchorMostRightPosition < popupMostRightPosition) {
+        anchorPosition - formattedPositionX
+    } else {
+        (popupSize.value.width - offset) / 2
+    }
 }
 
 @Preview(showBackground = true)
