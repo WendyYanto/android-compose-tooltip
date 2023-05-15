@@ -126,9 +126,9 @@ private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
                 })
                 .graphicsLayer {
                     translationY = if (inverted) {
-                        24f
+                        21f
                     } else {
-                        -24f
+                        -21f
                     }
                 }
         ) {
