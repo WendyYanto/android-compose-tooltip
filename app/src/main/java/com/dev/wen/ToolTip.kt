@@ -61,10 +61,10 @@ private val TriangleShape = GenericShape { size, _ ->
  *
  * @param popupProperties is to be passed to [Popup].
  * By default, [ToolTip] can be dismissed via back button.
- * This was achieved by setting focusable to true
+ * This was achieved by setting focusable to true.
  *
- * @param anchorContent is the most important parameter.
- * This is where you place your content that will be anchored by [ToolTip]
+ * @param anchorContent is where you place your content
+ * that will be anchored by [ToolTip].
  */
 @Composable
 fun ToolTip(
@@ -177,20 +177,23 @@ private fun calculatePopupPositionY(
     isAnchorOnTop: Boolean,
     screenHeight: Int
 ): AnchorPosition {
-    val onTopCoordinate = anchorOffset.y - popupSize.height - offset
-    val onDownCoordinate = anchorOffset.y + anchorSize.height + offset
+    // anchorTopPosition value when anchor is placed on top
+    val anchorTopPosition = anchorOffset.y - popupSize.height - offset
+    val anchorBottomPosition = anchorOffset.y + anchorSize.height + offset
+
+    val popupMostBottomPosition = anchorBottomPosition + popupSize.height
 
     return if (isAnchorOnTop) {
-        if (onTopCoordinate < 0) {
-            AnchorPosition.Bottom(onDownCoordinate)
+        if (anchorTopPosition < 0) {
+            AnchorPosition.Bottom(anchorBottomPosition)
         } else {
-            AnchorPosition.Top(onTopCoordinate)
+            AnchorPosition.Top(anchorTopPosition)
         }
     } else {
-        if (onDownCoordinate + popupSize.height > screenHeight) {
-            AnchorPosition.Top(onTopCoordinate)
+        if (popupMostBottomPosition > screenHeight) {
+            AnchorPosition.Top(anchorTopPosition)
         } else {
-            AnchorPosition.Bottom(onDownCoordinate)
+            AnchorPosition.Bottom(anchorBottomPosition)
         }
     }
 }
@@ -200,10 +203,11 @@ private fun calculatePopupPositionX(
     anchorSize: IntSize,
     popupSize: IntSize,
 ): AnchorPosition {
-    val centerPosition =
-        (anchorOffset.x + (anchorSize.width) / 2) - (popupSize.width / 2)
+    val anchorPosition = anchorOffset.x + (anchorSize.width / 2)
+    // popupStartPosition that its center was positioned in anchor's center
+    val popupStartPosition = anchorPosition - (popupSize.width / 2)
 
-    return AnchorPosition.Left(maxOf(0, centerPosition))
+    return AnchorPosition.Left(maxOf(0, popupStartPosition))
 }
 
 private fun calculateAnchorPosition(
@@ -214,16 +218,19 @@ private fun calculateAnchorPosition(
     offset: Int,
     screenWidth: Int
 ): Int {
-    val popupDiffOffset =
-        minOf(screenWidth - (popupPositionX.position + popupSize.width), 0)
-    val formattedPositionX = popupPositionX.position + popupDiffOffset
-    val popupMostRightPosition = formattedPositionX + popupSize.width + offset
+    val popupRightPosition = popupPositionX.position + popupSize.width
+    // if popup right position exceeds then popupRightOffset will become negative
+    // popupLeftPosition will be moved to the left by this popupRightOffset
+    val popupRightOffset = minOf(screenWidth - popupRightPosition, 0)
 
-    val anchorPosition = (anchorOffset.x + (anchorSize.width) / 2)
+    val popupLeftPosition = popupPositionX.position + popupRightOffset
+    val popupMostRightPosition = popupLeftPosition + popupSize.width + offset
+
+    val anchorPosition = anchorOffset.x + (anchorSize.width / 2)
     val anchorMostRightPosition = anchorOffset.x + anchorSize.width
 
     return if (anchorMostRightPosition < popupMostRightPosition) {
-        anchorPosition - formattedPositionX
+        anchorPosition - popupLeftPosition
     } else {
         (popupSize.width - offset) / 2
     }
@@ -290,7 +297,7 @@ private fun Anchor(
                 if (inverted) {
                     rotationX = 180f
                 }
-                shadowElevation = 12f
+                shadowElevation = 8f
             }
     ) {
         val path = Path()
