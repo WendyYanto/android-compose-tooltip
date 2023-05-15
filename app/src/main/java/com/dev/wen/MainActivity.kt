@@ -77,15 +77,18 @@ private val TriangleShape = GenericShape { size, _ ->
 }
 
 @Composable
-private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
+private fun ToolTipAnchor(
+    anchorWidth: Int,
+    inverted: Boolean = false
+) {
     val offset = with(LocalDensity.current) {
         4.dp.roundToPx()
     }
+
     Box(modifier = Modifier
         .zIndex(1f)
         .graphicsLayer {
             translationX = (anchorWidth - offset).toFloat()
-
         }) {
         Canvas(
             modifier = Modifier
@@ -119,11 +122,13 @@ private fun ToolTipAnchor(anchorWidth: Int, inverted: Boolean = false) {
             modifier = Modifier
                 .height(8.dp)
                 .width(16.dp)
-                .align(if (inverted) {
-                    Alignment.BottomCenter
-                } else {
-                    Alignment.TopCenter
-                })
+                .align(
+                    if (inverted) {
+                        Alignment.BottomCenter
+                    } else {
+                        Alignment.TopCenter
+                    }
+                )
                 .graphicsLayer {
                     translationY = if (inverted) {
                         21f
@@ -165,6 +170,7 @@ private fun Item(count: Int, name: String, isTopTooltip: Boolean = false) {
     val offset = with(LocalDensity.current) {
         10.dp.roundToPx()
     }
+
     val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
     val screenWidth = (LocalConfiguration.current.screenWidthDp * density).roundToInt()
 
