@@ -38,7 +38,7 @@ import kotlin.math.roundToInt
 
 private const val TOOLTIP_ANCHOR_OFFSET = 1f
 private const val TOOLTIP_OFFSET_IN_DP = 10
-private const val TOOLTIP_ELEVATION_IN_DP = 4
+private const val TOOLTIP_ELEVATION_IN_DP = 8
 private const val TOOLTIP_ANCHOR_WIDTH_IN_DP = 16
 
 private val TriangleShape = GenericShape { size, _ ->
@@ -290,7 +290,7 @@ private fun Anchor(
                 if (inverted) {
                     rotationX = 180f
                 }
-                shadowElevation = 10f
+                shadowElevation = 12f
             }
     ) {
         val path = Path()
