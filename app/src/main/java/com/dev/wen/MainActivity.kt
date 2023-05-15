@@ -175,7 +175,6 @@ private fun AnchorShadowCover(
         modifier = modifier
             .height(height)
             .width(width)
-
             .graphicsLayer {
                 translationY = if (inverted) {
                     21f
@@ -191,7 +190,6 @@ private fun AnchorShadowCover(
 internal sealed class AnchorPosition {
 
     abstract val position: Int
-
     data class Bottom(override val position: Int) : AnchorPosition()
     data class Top(override val position: Int) : AnchorPosition()
     data class Left(override val position: Int) : AnchorPosition()
