@@ -194,7 +194,7 @@ internal sealed class AnchorPosition {
 private fun ToolTip(
     isTopTooltip: Boolean = false,
     offsetInDp: Dp = 10.dp,
-    popupProperties: PopupProperties = PopupProperties(),
+    popupProperties: PopupProperties = PopupProperties(focusable = true),
     anchorContent: @Composable () -> Unit
 ) {
     val density = LocalDensity.current.density
