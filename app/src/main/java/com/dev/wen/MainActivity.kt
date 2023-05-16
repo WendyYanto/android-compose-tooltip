@@ -56,12 +56,12 @@ fun Greeting(name: String) {
         modifier = Modifier
             .background(Color.White)
             .padding(16.dp),
-        verticalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.Start
     ) {
         data.forEach {
             ToolTip(toolTipContent = { ToolTipContent() }) {
-                Text(text = "Text")
+                Text(text = "AAAAAAAAAAAAAA")
             }
         }
     }

@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.material.Card
 import androidx.compose.material.Text
@@ -27,9 +25,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInRoot
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -39,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.zIndex
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private const val TOOLTIP_ANCHOR_OFFSET = 1f
@@ -130,7 +125,6 @@ fun ToolTip(
             anchorSize = anchorSize,
             popupSize = popupSize,
             popupPositionX = popupPositionX,
-            margin = marginInPx,
             screenWidth = screenWidth
         )
     }
@@ -166,10 +160,10 @@ fun ToolTip(
         }
 
         Box(modifier = Modifier
+            .align(Alignment.TopStart)
             .onGloballyPositioned {
                 anchorOffset =
                     IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
-                Log.v("WEN_Z", "$anchorOffset")
             }
             .onSizeChanged { anchorSize = it }
             .clickable { visiblePopUp = true }) {
@@ -220,7 +214,7 @@ private fun calculatePopupPositionX(
     val purePopupSizeWidth = (popupSize.width - 2 * marginInPx)
     val widthDiff = (anchorSize.width - purePopupSizeWidth) / 2
 
-    return AnchorPosition.Left(-marginInPx + widthDiff)
+    return AnchorPosition.Left(widthDiff - marginInPx)
 }
 
 private fun calculateAnchorPosition(
@@ -228,28 +222,16 @@ private fun calculateAnchorPosition(
     anchorSize: IntSize,
     popupSize: IntSize,
     popupPositionX: AnchorPosition,
-    margin: Int,
     screenWidth: Int
 ): Int {
     val popupRightPosition = anchorOffset.x + popupPositionX.position + popupSize.width
     // if popup right position exceeds then popupRightOffset will become negative
     // popupLeftPosition will be moved to the left by this popupRightOffset
-    val popupRightOffset = minOf(screenWidth - popupRightPosition, 0)
+    val popupLeftOffset = minOf(screenWidth - popupRightPosition, 0)
+    val popupLeftPosition = anchorOffset.x + popupPositionX.position + popupLeftOffset
 
-    val popupLeftPosition = anchorOffset.x + popupPositionX.position + popupRightOffset
-    val popupMostRightPosition = popupLeftPosition + popupSize.width + margin
-
-    val anchorMostRightPosition = anchorOffset.x + anchorSize.width
-
-    return if (anchorMostRightPosition < popupMostRightPosition) {
-        // use anchor's center position
-        // ToDo: BUG !!!
-        abs(popupPositionX.position) + anchorSize.width / 2
-    } else {
-        // use center position of popup
-        // ToDo: BUG !!!
-        popupSize.width / 2
-    }
+    val diff = maxOf(anchorOffset.x - maxOf(0, popupLeftPosition), 0)
+    return diff + anchorSize.width / 2 - maxOf(popupPositionX.position, 0)
 }
 
 @Composable
@@ -370,6 +352,6 @@ fun ToolTipContent() {
             .background(Color.White)
             .padding(16.dp),
     ) {
-        Text(text = "Text Text")
+        Text(text = "AAA")
     }
 }
