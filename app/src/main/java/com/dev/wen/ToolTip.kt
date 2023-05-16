@@ -1,6 +1,5 @@
 package com.dev.wen
 
-import android.util.Log
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +24,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -163,7 +162,7 @@ fun ToolTip(
             .align(Alignment.TopStart)
             .onGloballyPositioned {
                 anchorOffset =
-                    IntOffset(it.positionInRoot().x.toInt(), it.positionInRoot().y.toInt())
+                    IntOffset(it.positionInWindow().x.toInt(), it.positionInWindow().y.toInt())
             }
             .onSizeChanged { anchorSize = it }
             .clickable { visiblePopUp = true }) {
@@ -352,6 +351,6 @@ fun ToolTipContent() {
             .background(Color.White)
             .padding(16.dp),
     ) {
-        Text(text = "AAA")
+        Text(text = "AAAAAAAAAAAAAAAAAA")
     }
 }
