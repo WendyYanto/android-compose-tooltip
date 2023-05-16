@@ -218,12 +218,15 @@ private fun calculatePopupPositionX(
     anchorSize: IntSize,
     popupSize: IntSize,
 ): PopupPosition {
-    val purePopupSizeWidth = (popupSize.width - 2 * marginInPx)
-    val widthDiff = (anchorSize.width - purePopupSizeWidth) / 2
+    val withoutMarginPopupWidth = (popupSize.width - 2 * marginInPx)
+    val widthDiff = (anchorSize.width - withoutMarginPopupWidth) / 2
 
     return PopupPosition.Left(widthDiff - marginInPx)
 }
 
+/**
+ * [calculateTipPositionX] is to calculate position required for Tip to place in the center of anchor
+ */
 private fun calculateTipPositionX(
     anchorOffset: IntOffset,
     anchorSize: IntSize,
@@ -232,13 +235,18 @@ private fun calculateTipPositionX(
     screenWidth: Int
 ): Int {
     val popupRightPosition = anchorOffset.x + popupPositionX.position + popupSize.width
-    // if popup right position exceeds screenWidth then popupRightOffset will become negative
-    // popupLeftPosition will be moved to the left by this popupRightOffset
+    // if [popupRightPosition] exceeds screenWidth then [popupLeftOffset] will become negative
+    // [popupLeftPosition] will be moved to the left by this [popupLeftOffset]
     val popupLeftOffset = minOf(screenWidth - popupRightPosition, 0)
     val popupLeftPosition = anchorOffset.x + popupPositionX.position + popupLeftOffset
 
+    // [maxOf(0, popupLeftPosition)] will be valid as if [popupLeftPosition] value is negative
+    // then popUp will reposition itself at (0, Y) coordinates of screen
+    // [diff] is the distance between popUp left's position and anchor left's position
     val diff = maxOf(anchorOffset.x - maxOf(0, popupLeftPosition), 0)
-    return diff + anchorSize.width / 2 - maxOf(popupPositionX.position, 0)
+
+    val anchorLeftPosition = diff - maxOf(popupPositionX.position, 0)
+    return anchorLeftPosition + anchorSize.width / 2
 }
 
 @Composable
@@ -359,6 +367,6 @@ fun ToolTipContent() {
             .background(Color.White)
             .padding(16.dp),
     ) {
-        Text(text = "AAAAAAAAAAAAAAAAAA")
+        Text(text = "A")
     }
 }
