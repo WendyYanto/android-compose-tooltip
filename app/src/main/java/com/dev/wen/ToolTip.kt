@@ -95,37 +95,45 @@ fun ToolTip(
     val screenHeight = (LocalConfiguration.current.screenHeightDp * density).roundToInt()
     val screenWidth = (LocalConfiguration.current.screenWidthDp * density).roundToInt()
 
-    val popupPositionY by derivedStateOf {
-        calculatePopupPositionY(
-            anchorOffset = anchorOffset,
-            anchorSize = anchorSize,
-            popupSize = popupSize,
-            margin = marginInPx,
-            isAnchorOnTop = isAnchorOnTop,
-            screenHeight = screenHeight
-        )
+    val popupPositionY by remember {
+        derivedStateOf {
+            calculatePopupPositionY(
+                anchorOffset = anchorOffset,
+                anchorSize = anchorSize,
+                popupSize = popupSize,
+                margin = marginInPx,
+                isAnchorOnTop = isAnchorOnTop,
+                screenHeight = screenHeight
+            )
+        }
     }
 
-    val popupPositionX by derivedStateOf {
-        calculatePopupPositionX(
-            marginInPx = marginInPx,
-            anchorSize = anchorSize,
-            popupSize = popupSize
-        )
+    val popupPositionX by remember {
+        derivedStateOf {
+            calculatePopupPositionX(
+                marginInPx = marginInPx,
+                anchorSize = anchorSize,
+                popupSize = popupSize
+            )
+        }
     }
 
-    val popupOffset by derivedStateOf {
-        IntOffset(popupPositionX.position, popupPositionY.position)
+    val popupOffset by remember {
+        derivedStateOf {
+            IntOffset(popupPositionX.position, popupPositionY.position)
+        }
     }
 
-    val anchorPosition by derivedStateOf {
-        calculateAnchorPosition(
-            anchorOffset = anchorOffset,
-            anchorSize = anchorSize,
-            popupSize = popupSize,
-            popupPositionX = popupPositionX,
-            screenWidth = screenWidth
-        )
+    val anchorPosition by remember {
+        derivedStateOf {
+            calculateAnchorPosition(
+                anchorOffset = anchorOffset,
+                anchorSize = anchorSize,
+                popupSize = popupSize,
+                popupPositionX = popupPositionX,
+                screenWidth = screenWidth
+            )
+        }
     }
 
     Box {
