@@ -124,9 +124,9 @@ fun ToolTip(
         }
     }
 
-    val anchorPosition by remember {
+    val tipPositionX by remember {
         derivedStateOf {
-            calculateAnchorPosition(
+            calculateTipPositionX(
                 anchorOffset = anchorOffset,
                 anchorSize = anchorSize,
                 popupSize = popupSize,
@@ -145,9 +145,9 @@ fun ToolTip(
             ) {
                 Column(modifier = Modifier
                     .onSizeChanged { popupSize = it }) {
-                    if (popupPositionY is AnchorPosition.Bottom) {
-                        ToolTipAnchor(
-                            anchorWidth = anchorPosition,
+                    if (popupPositionY is PopupPosition.Bottom) {
+                        Tip(
+                            tipOffset = tipPositionX,
                             inverted = true
                         )
                     }
@@ -159,8 +159,8 @@ fun ToolTip(
                     ) {
                         toolTipContent()
                     }
-                    if (popupPositionY is AnchorPosition.Top) {
-                        ToolTipAnchor(anchorPosition)
+                    if (popupPositionY is PopupPosition.Top) {
+                        Tip(tipPositionX)
                     }
                 }
             }
@@ -188,7 +188,7 @@ private fun calculatePopupPositionY(
     margin: Int,
     isAnchorOnTop: Boolean,
     screenHeight: Int
-): AnchorPosition {
+): PopupPosition {
     // anchorTopPosition value when anchor is placed on top
     val anchorTopPosition = anchorOffset.y - anchorSize.height - popupSize.height - margin
     val anchorBottomPosition = anchorOffset.y + anchorSize.height + margin
@@ -200,15 +200,15 @@ private fun calculatePopupPositionY(
 
     return if (isAnchorOnTop) {
         if (anchorTopPosition < 0) {
-            AnchorPosition.Bottom(popupToBottomOffset)
+            PopupPosition.Bottom(popupToBottomOffset)
         } else {
-            AnchorPosition.Top(popupToTopOffset)
+            PopupPosition.Top(popupToTopOffset)
         }
     } else {
         if (popupMostBottomPosition > screenHeight) {
-            AnchorPosition.Top(popupToTopOffset)
+            PopupPosition.Top(popupToTopOffset)
         } else {
-            AnchorPosition.Bottom(popupToBottomOffset)
+            PopupPosition.Bottom(popupToBottomOffset)
         }
     }
 }
@@ -217,22 +217,22 @@ private fun calculatePopupPositionX(
     marginInPx: Int,
     anchorSize: IntSize,
     popupSize: IntSize,
-): AnchorPosition {
+): PopupPosition {
     val purePopupSizeWidth = (popupSize.width - 2 * marginInPx)
     val widthDiff = (anchorSize.width - purePopupSizeWidth) / 2
 
-    return AnchorPosition.Left(widthDiff - marginInPx)
+    return PopupPosition.Left(widthDiff - marginInPx)
 }
 
-private fun calculateAnchorPosition(
+private fun calculateTipPositionX(
     anchorOffset: IntOffset,
     anchorSize: IntSize,
     popupSize: IntSize,
-    popupPositionX: AnchorPosition,
+    popupPositionX: PopupPosition,
     screenWidth: Int
 ): Int {
     val popupRightPosition = anchorOffset.x + popupPositionX.position + popupSize.width
-    // if popup right position exceeds then popupRightOffset will become negative
+    // if popup right position exceeds screenWidth then popupRightOffset will become negative
     // popupLeftPosition will be moved to the left by this popupRightOffset
     val popupLeftOffset = minOf(screenWidth - popupRightPosition, 0)
     val popupLeftPosition = anchorOffset.x + popupPositionX.position + popupLeftOffset
@@ -242,12 +242,12 @@ private fun calculateAnchorPosition(
 }
 
 @Composable
-private fun ToolTipAnchor(
-    anchorWidth: Int,
+private fun Tip(
+    tipOffset: Int,
     inverted: Boolean = false,
     width: Dp = TOOLTIP_ANCHOR_WIDTH_IN_DP.dp
 ) {
-    val offset = with(LocalDensity.current) {
+    val widthOffset = with(LocalDensity.current) {
         (width / 2).roundToPx()
     }
 
@@ -256,17 +256,17 @@ private fun ToolTipAnchor(
     Box(modifier = Modifier
         .zIndex(1f)
         .graphicsLayer {
-            translationX = (anchorWidth - offset).toFloat()
+            translationX = (tipOffset - widthOffset).toFloat()
         }) {
 
-        Anchor(
+        TipShape(
             modifier = Modifier.align(Alignment.TopStart),
             height = height,
             width = width,
             inverted = inverted
         )
 
-        AnchorShadowCover(
+        TipShadowCover(
             modifier = Modifier.align(
                 if (inverted) {
                     Alignment.BottomCenter
@@ -282,7 +282,7 @@ private fun ToolTipAnchor(
 }
 
 @Composable
-private fun Anchor(
+private fun TipShape(
     modifier: Modifier = Modifier,
     height: Dp,
     width: Dp,
@@ -317,7 +317,7 @@ private fun Anchor(
 }
 
 @Composable
-private fun AnchorShadowCover(
+private fun TipShadowCover(
     modifier: Modifier = Modifier,
     height: Dp,
     width: Dp,
@@ -343,13 +343,13 @@ private fun AnchorShadowCover(
     }
 }
 
-internal sealed class AnchorPosition {
+internal sealed class PopupPosition {
 
     abstract val position: Int
 
-    data class Bottom(override val position: Int) : AnchorPosition()
-    data class Top(override val position: Int) : AnchorPosition()
-    data class Left(override val position: Int) : AnchorPosition()
+    data class Bottom(override val position: Int) : PopupPosition()
+    data class Top(override val position: Int) : PopupPosition()
+    data class Left(override val position: Int) : PopupPosition()
 }
 
 @Composable
